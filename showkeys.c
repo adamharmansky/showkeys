@@ -53,20 +53,21 @@ load_keys() {
 	char* line = NULL;
 	struct dirent* ment;
 	struct dirent* ent;
-	char pth[1024];
+	char* pth;
 	unsigned int i, j;
 	SK_key* k;
-	char cmd[4096];
+	char *cmd;
 	int x;
-	char kd[1024];
+	char* kd;
 	char* home;
 
 	if (*key_dir == '~') {
 		home = getenv("HOME");
+		kd = malloc(strlen(home)+strlen(key_dir));
 		strcpy(kd, home);
 		strcat(kd, key_dir + 1);
 	} else {
-		strcpy(kd, key_dir);
+		kd = (char*)key_dir;
 	}
 
 	programs = malloc(program_count = 0);
@@ -81,58 +82,70 @@ load_keys() {
 	while (ment = readdir(mdir)) {
 		/* we are looking for sub-directories */
 		if (ment->d_type == DT_DIR && *ment->d_name != '.') {
+			cmd = malloc(strlen(program_detector) + strlen(ment->d_name));
 			sprintf(cmd, program_detector, ment->d_name);
 			pipe = popen(cmd, "r");
+			free(cmd);
 			fscanf(pipe, "%d", &x);
 			pclose(pipe);
 			if (x) {
 				programs = realloc(programs, ++program_count * sizeof(SK_program));
 				programs[program_count-1] = (SK_program) {
 					.name = malloc(strlen(ment->d_name)+1),
+					/* malloc 0 just to make sure */
 					.categories = malloc(0),
 					.category_count = 0
 				};
 				strcpy(programs[program_count-1].name, ment->d_name);
+				pth = malloc(strlen(kd)+strlen(ment->d_name)+2);
 				strcpy(pth, kd);
 				strcat(pth, "/");
 				strcat(pth, ment->d_name);
 				dir = opendir(pth);
+				free(pth);
 				/* regular files */
 				while (ent = readdir(dir)) {
 					if (ent->d_type == DT_REG) {
 						programs[program_count-1].categories = realloc(programs[program_count-1].categories, ++programs[program_count-1].category_count*sizeof(SK_category));
 						programs[program_count-1].categories[programs[program_count-1].category_count-1] = (SK_category) {
 							.name = malloc(strlen(ent->d_name)+1),
+							/* malloc 0 just to make sure */
 							.keys = malloc(0),
 							.key_count = 0
 						};
 						strcpy(programs[program_count-1].categories[programs[program_count-1].category_count-1].name, ent->d_name);
+						pth = malloc(strlen(kd)+strlen(ment->d_name)+strlen(ent->d_name)+3);
 						strcpy(pth, kd);
 						strcat(pth, "/");
 						strcat(pth, ment->d_name);
 						strcat(pth, "/");
 						strcat(pth, ent->d_name);
 						file = fopen(pth, "r");
+						free(pth);
 						while (~getline(&line, &size, file)) {
 							programs[program_count-1].categories[programs[program_count-1].category_count-1].keys = realloc(programs[program_count-1].categories[programs[program_count-1].category_count-1].keys, ++programs[program_count-1].categories[programs[program_count-1].category_count-1].key_count*sizeof(SK_key));
 							k = &programs[program_count-1].categories[programs[program_count-1].category_count-1].keys[programs[program_count-1].categories[programs[program_count-1].category_count-1].key_count-1];
 							*k = (SK_key) {
-								.mod = malloc(256),
-								.key = malloc(256),
-								.action = malloc(256)
+								/* malloc 0 just to make sure */
+								.mod = malloc(0),
+								.key = malloc(0),
+								.action = malloc(0)
 							};
 							i = 0;
 							for (j = 0; line[i] != ' ';i++,j++) {
+								k->mod = realloc(k->mod, j+2);
 								k->mod[j] = line[i];
 							}
 							k->mod[j] = 0;
 							while (line[i] == ' ') i++;
 							for (j = 0; line[i] != ' '; i++, j++) {
+								k->key = realloc(k->key, j+2);
 								k->key[j] = line[i];
 							}
 							k->key[j] = 0;
 							while (line[i] == ' ') i++;
 							for (j = 0; line[i] != '\n' && line[i]; i++, j++) {
+								k->action = realloc(k->action, j+2);
 								k->action[j] = line[i];
 							}
 							k->action[j] = 0;
