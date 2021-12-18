@@ -47,7 +47,8 @@ xinit() {
 		CWOverrideRedirect | CWEventMask, &swa);
 	XAllocNamedColor(display, DefaultColormap(display, screen), color_boder, &border_color, &bruh);
 	XSetWindowBorder(display, window, border_color.pixel);
-	XMapWindow(display, window);
+	/* DO NOT MAP THE WINDOW YET, AS IT WILL BE RESIZED LATER */
+	//XMapWindow(display, window);
 	while (XGrabKeyboard(display, DefaultRootWindow(display), True, GrabModeAsync, GrabModeAsync, CurrentTime));
 
 	surface = cairo_xlib_surface_create(display, window, DefaultVisual(display, screen), width, height);

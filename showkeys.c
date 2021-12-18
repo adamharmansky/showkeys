@@ -306,6 +306,8 @@ main(int argc, char** argv) {
 	xinit();
 	calculate_column_width();
 	size_window();
+	/* MAP THE WINDOW NOW, NOT IN XINIT */
+	XMapWindow(display, window);
 	init_colors();
 
 	for (;;) {
