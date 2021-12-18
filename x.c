@@ -35,6 +35,9 @@ xinit() {
 		if (i < n) {
 			winx = info[i].x_org + (info[i].width - width)/2;
 			winy = info[i].y_org + (info[i].height - height)/2;
+		} else {
+			winx = info[0].x_org + (info[0].width - width)/2;
+			winy = info[0].y_org + (info[0].height - height)/2;
 		}
 	}
 

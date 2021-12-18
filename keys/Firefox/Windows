@@ -1,0 +1,16 @@
+Ctrl       w        Close tab
+Ctrl+Shift w        Close window
+Ctrl       Tab      Cycle tabs
+Ctrl       q        Quit
+Alt        N        Go to tab N
+Alt        9        Go to last tab
+Ctrl+Shift PageUp   Move tab left
+Ctrl+Shift PageDown Move tab right
+Ctrl       m        Mute site
+Ctrl       t        New tab
+Ctrl+Shift p        New private window
+           Enter    Follow link
+Ctrl       Enter    Follow link in new tab
+Ctrl+Shift Enter    Follow link in background tab
+Ctrl+Shift t        Undo close tab
+Ctrl+Shift n        Undo close window

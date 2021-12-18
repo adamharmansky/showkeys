@@ -1,0 +1,16 @@
+Ctrl c         Copy
+Ctrl x         Cut
+Ctrl v         Paste
+Ctrl+Shift v   Paste (as plain text)
+     Del       Delete
+Ctrl Backspace Delete word left
+Ctrl Del       Delete word right
+Ctrl Left      One word left
+Ctrl Right     One word right
+     Home      Move to BOL
+     End       Move to EOL
+Ctrl Home      Move to beginning of text
+Ctrl End       Move to end of text
+Ctrl z         Undo
+Ctrl y         Redo
+Ctrl a         Select all

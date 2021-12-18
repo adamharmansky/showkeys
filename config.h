@@ -37,4 +37,4 @@ const static int  column_padding   = 5;
  *  - the program needs to output a non-zero number on success and a zero on
  *    failure.
  *  - Add echo-es at start to always show keys for a program */
-const static char program_detector[]= "(echo dwm; pstree -T -p $(xdotool getactivewindow getwindowpid)) | sed 's/[-+`|]\\+/\\n/g' | sed '/^\\s*$/d' | tr '[:upper:]' '[:lower:]' | sed 's/web content/firefox/g' | grep %s | wc";
+const static char program_detector[]= "(echo dwm; pstree -T -p $(xdotool getactivewindow getwindowpid)) | sed 's/[-+`|]\\+/\\n/g' | sed '/^\\s*$/d' | tr '[:upper:]' '[:lower:]' | sed 's/web content/firefox/g' | grep $(echo '%s' | tr '[:upper:]' '[:lower:]') | wc";
