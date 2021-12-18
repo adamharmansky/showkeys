@@ -1,0 +1,7 @@
+ c Change
+ d Delete
+ y Yank
+ ! External filter
+ > Indent
+ < Unindent
+ = Auto format

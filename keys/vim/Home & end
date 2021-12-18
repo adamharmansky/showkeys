@@ -1,0 +1,4 @@
+ $ EOL
+ 0 Hard BOL
+ ^ Soft BOL
+ _ Soft BOL down

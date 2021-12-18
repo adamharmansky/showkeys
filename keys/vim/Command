@@ -1,0 +1,10 @@
+Ctrl [  Normal mode
+     u  Undo
+Ctrl r  Redo
+Ctrl a  Increase number
+Ctrl x  Decrease number
+     qN Record macro N
+     @N Play macro N
+     K  Manpage on selected word
+Ctrl g  Cursor position info
+     :  Command mode

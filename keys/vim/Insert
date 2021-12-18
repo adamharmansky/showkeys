@@ -1,0 +1,12 @@
+ i Insert before Cursor
+ a Insert after Cursor
+ I Insert at BOL
+ A Insert at EOL
+ o Open below
+ O Open above
+ r Replace character
+ R Replace mode
+ s Substitute char
+ S Substitute line
+ c Change
+ C Change to EOL

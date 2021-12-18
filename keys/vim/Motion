@@ -1,0 +1,12 @@
+ % Go to matching bracket
+ ( Sentence begin
+ ) Sentence end
+ + Next line
+ - Prev line
+ [/]. Misc motion
+ { Paragraph begin
+ } Paragraph end
+ NG Line N
+ N| Column N
+i Motion Inside motion
+a Motion Around motion

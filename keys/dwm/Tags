@@ -1,0 +1,7 @@
+Super            N Switch to N-th tag
+Super+Shift      N Move client to N-th tag
+Super+Ctrl       N Also select N-th tag
+Super+Shift+Ctrl N Also show client on N-th tag
+Super            Tab Switch to previuous tag
+Super            0 View all tags
+Super+Shift      0 Show window on all tags

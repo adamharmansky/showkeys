@@ -1,0 +1,4 @@
+ p Paste after cursor
+ P Paste before cursor
+ x Delete character under cursor
+ X Delete character before cursor

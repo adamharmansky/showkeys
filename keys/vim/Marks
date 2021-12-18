@@ -1,0 +1,4 @@
+Ctrl o Prev mark
+ 'N Go to mark N
+ `N Go to precise mark N
+ mN Set mark N

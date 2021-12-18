@@ -1,0 +1,11 @@
+ f Find char
+ F Find char reverse
+ t To char
+ T To char reverse
+ ; Repeat f/F/t/T
+ / Find
+ ? Find reverse
+ * Find word under cursor
+ # Find word under cusror reverse
+ n Next search match
+ N Prev search match

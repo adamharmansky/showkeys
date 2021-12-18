@@ -1,0 +1,6 @@
+ v Visual mode
+ V Visual line mode
+Ctrl v Visual block mode
+Visual u Lower case
+Visual U Upper case
+Visual ~ Toggle case
