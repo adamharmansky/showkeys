@@ -1,0 +1,8 @@
+               e         Edit message
+               Backspace Delete message
+               p         Pin message
+               +         Add reaction
+               r         Reply
+Ctrl           c         Copy message text
+Alt            Enter     Mark unread
+               Esc       Focus text area

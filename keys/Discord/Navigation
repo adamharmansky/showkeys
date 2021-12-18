@@ -1,0 +1,14 @@
+Ctrl           k         Quick-switcher
+Ctrl+Alt       Up        Server up
+Ctrl+Alt       Down      Server down
+Alt            Up        Channel up
+Alt            Down      Channel down
+Alt            Left      History back
+Alt            Right     History forward
+Shift+Alt      Up        Unread up
+Shift+Alt      Down      Unread down
+Ctrl+Shift+Alt Up        Ping up
+Ctrl+Shift+Alt Down      Ping down
+Ctrl+Shift+Alt v         Current call
+Ctrl+Alt       Right     Switch between server and DM
+Ctrl+Shift     n         Create or join server

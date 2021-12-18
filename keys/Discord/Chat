@@ -1,0 +1,12 @@
+Shift       Esc    Mark sever read
+            Esc    Mark channel read
+Ctrl+Shift  t      Create Group
+Ctrl        p      Pins
+Ctrl        i      Inbox
+Ctrl+Shift  e      Mark inbox read
+Ctrl        u      Member list
+Ctrl        e      Emoji picker
+Ctrl        g      Gif picker
+Ctrl        s      Sticker picker
+Shift       PageUp Oldest unread message
+Ctrl+Shift  u      Upload file
