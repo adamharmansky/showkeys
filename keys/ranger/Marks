@@ -1,0 +1,5 @@
+ m  Create mark
+ um Unmark
+ '  Go to mark
+ t  Tag file with *
+ t" tag file with any char
