@@ -60,6 +60,8 @@ load_keys() {
 	int x;
 	char* kd;
 	char* home;
+	
+	/* pain. */
 
 	if (*key_dir == '~') {
 		home = getenv("HOME");
