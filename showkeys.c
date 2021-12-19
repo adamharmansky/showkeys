@@ -374,7 +374,7 @@ redraw()
 	cairo_font_extents(cairo, &search_font_extents);
 
 	cairo_set_source_rgb(cairo, search_bg_color.r, search_bg_color.g, search_bg_color.b);
-	cairo_rectangle(cairo, border_padding, border_padding, width - border_padding*2, search_font_extents.height + search_padding*2);
+	cairo_rectangle(cairo, 0, 0, width, search_font_extents.height + search_padding*2 + border_padding);
 	cairo_fill(cairo);
 	cairo_set_source_rgb(cairo, fg_color.r, fg_color.g, fg_color.b);
 	cairo_move_to(cairo, border_padding + search_padding, border_padding + search_padding + search_font_extents.ascent);
