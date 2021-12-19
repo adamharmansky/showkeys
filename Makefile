@@ -12,5 +12,9 @@ install: all
 	mkdir -p /usr/share/showkeys
 	cp -r keys/* /usr/share/showkeys
 
+uninstall:
+	rm -rf /usr/share/showkeys
+	rm -rf /usr/bin/showkeys
+
 clean:
 	rm showkeys
