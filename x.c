@@ -17,6 +17,8 @@ xinit() {
 	XineramaScreenInfo * info;
 	unsigned int n;
 	int di;
+	int curx, cury;
+	union {Window w; int x;} junk;
 	Window w;
 	XWindowAttributes wa;
 	XSetWindowAttributes swa = {
@@ -31,13 +33,18 @@ xinit() {
 		XGetInputFocus(display, &w, &di);
 		XGetWindowAttributes(display, w, &wa);
 		for (i = 0; i < n; i++)
-			if (info[i].x_org <= wa.x + wa.width/2 && info[i].y_org <= wa.y + wa.height/2 && info[i].x_org + info[i].width >= wa.x + wa.width/2 && info[i].y_org + info[i].height >= wa.y + wa.height/2) break;
+			if (info[i].x_org <= wa.x + wa.width/2 && info[i].y_org <= wa.y + wa.height/2 && info[i].x_org + info[i].width >= wa.x + wa.width/2 && info[i].y_org + info[i].height >= wa.y + wa.height/2)
+				break;
 		if (i < n) {
 			winx = info[i].x_org + (info[i].width - width)/2;
 			winy = info[i].y_org + (info[i].height - height)/2;
 		} else {
-			winx = info[0].x_org + (info[0].width - width)/2;
-			winy = info[0].y_org + (info[0].height - height)/2;
+			XQueryPointer(display, DefaultRootWindow(display), (Window*)&junk, (Window*)&junk, &curx, &cury, (int*)&junk, (int*)&junk, (unsigned int*)&junk);
+			for (i = 0; i < n; i++)
+				if (info[i].x_org <= curx && info[i].y_org <= cury && info[i].x_org + info[i].width >= curx && info[i].y_org + info[i].height >= cury)
+					break;
+			winx = info[i].x_org + (info[i].width - width)/2;
+			winy = info[i].y_org + (info[i].height - height)/2;
 		}
 	}
 
