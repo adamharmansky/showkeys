@@ -1,14 +1,24 @@
-# showkeys
+# Showkeys
 
-Keybind popup like in awesomewm
+Keybind popup inspired by awesomewm
 
 ![](showkeys.gif)
 
-Based on cairo and xlib. To build and install, run:
+## Dependencies:
+
+ - Xlib
+ - Xinerama
+ - Cairo
+ - Xdotool and pstree (used to detect if a program is running, see config.h)
+
+## Building
+
+To build and install, run:
 
 ```
 sudo make install
 ```
 
-Edit `config.h` to configure. The `keys` directory contains my own keyboard shortcuts as an example.
+## Settings
 
+Edit `config.h` to change settings, the Nord theme is used by default. The `keys` directory contains my own keyboard shortcuts as an example.
