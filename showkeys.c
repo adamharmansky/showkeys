@@ -41,129 +41,177 @@ init_colors() {
 		colors[i] = parse_color(title_colors[i]);
 }
 
+static char*
+get_path() {
+	static char* kd = NULL;
+	char* home;
+
+	/* do nothing if kd has already been allocated */
+	if (!kd) {
+		/* if the path begins with the ~ character, substitute it for $HOME. */
+		if (*key_dir == '~') {
+			home = getenv("HOME");
+			kd = malloc(strlen(home)+strlen(key_dir));
+			strcpy(kd, home);
+			strcat(kd, key_dir + 1);
+		} else {
+			kd = malloc(strlen(key_dir)+1);
+			strcpy(kd, key_dir);
+		}
+	}
+	return kd;
+}
+
+static void
+load_key(SK_key* self, char* line) {
+	unsigned int i, j;
+	int size;
+
+	self->mod    = malloc(1);
+	self->key    = malloc(1);
+	self->action = malloc(1);
+
+	self->mod[0] = 0;
+	self->key[0] = 0;
+	self->action[0] = 0;
+
+	i = 0;
+	size = 1;
+	for (j = 0; line[i] != ' '; i++, j++) {
+		if (line[i] == '\n' || !line[i]) break;
+		if (j + 1 >= size)
+			self->mod = realloc(self->mod, size = size<<1);
+		self->mod[j] = line[i];
+	}
+	self->mod[j] = 0;
+	size = 1;
+	while (line[i] == ' ') i++;
+	for (j = 0; line[i] != ' '; i++, j++) {
+		if (line[i] == '\n' || !line[i]) break;
+		if (j + 1 >= size)
+			self->key = realloc(self->key, size = size<<1);
+		self->key[j] = line[i];
+	}
+	self->key[j] = 0;
+	size = 1;
+	while (line[i] == ' ') i++;
+	for (j = 0; line[i] != '\n' && line[i]; i++, j++) {
+		if (line[i] == '\n' || !line[i]) break;
+		if (j + 1 >= size)
+			self->action = realloc(self->action, size = size<<1);
+		self->action[j] = line[i];
+	}
+	self->action[j] = 0;
+}
+
+static void
+load_category(SK_category* self, char* name, char* parent) {
+	FILE* file;
+	char* pth;
+	char* line = NULL;
+	size_t size;
+
+	self->name = malloc(strlen(name)+1);
+	strcpy(self->name, name);
+
+	self->keys = malloc(0);
+	self->key_count = 0;
+
+	/* "key_dir/program/category" */
+	pth = malloc(strlen(get_path())+strlen(name)+strlen(parent)+3);
+	strcpy(pth, get_path());
+	strcat(pth, "/");
+	strcat(pth, parent);
+	strcat(pth, "/");
+	strcat(pth, name);
+
+	file = fopen(pth, "r");
+
+	free(pth);
+
+	while (~getline(&line, &size, file)) {
+		self->keys = realloc(self->keys, ++self->key_count*sizeof(SK_key));
+		load_key(&self->keys[self->key_count-1], line);
+
+		free(line);
+		/* set line to NULL so getline knows that it should malloc it again */
+		line = NULL;
+	}
+	fclose(file);
+}
+
+static void
+load_program(SK_program* self, char* name)
+{
+	char* pth;
+	DIR* dir;
+	struct dirent* ent;
+
+	self->name = malloc(strlen(name)+1);
+	strcpy(self->name, name);
+
+	self->categories = malloc(0);
+	self->category_count = 0;
+
+	pth = malloc(strlen(get_path())+strlen(name)+2);
+	strcpy(pth, get_path());
+	strcat(pth, "/");
+	strcat(pth, name);
+
+	dir = opendir(pth);
+
+	free(pth);
+
+	while (ent = readdir(dir)) {
+		/* we are looking for regular files */
+		if (ent->d_type == DT_REG) {
+			self->categories = realloc(self->categories, ++self->category_count*sizeof(SK_category));
+			load_category(&self->categories[self->category_count-1], ent->d_name, name);
+		}
+	}
+}
+
+static int
+should_be_displayed(char* name) {
+	char* cmd;
+	FILE* pipe;
+	int x;
+
+	cmd = malloc(strlen(program_detector) + strlen(name));
+	sprintf(cmd, program_detector, name);
+	pipe = popen(cmd, "r");
+	free(cmd);
+	fscanf(pipe, "%d", &x);
+	pclose(pipe);
+
+	return x;
+}
+
 static void
 load_keys() {
-	DIR* mdir;
 	DIR* dir;
-	FILE* file;
-	FILE* pipe;
-	char* wintitle = NULL;
-	size_t wintitlesize;
-	size_t size;
-	char* line = NULL;
-	struct dirent* ment;
 	struct dirent* ent;
-	char* pth;
-	unsigned int i, j;
-	SK_key* k;
-	char *cmd;
-	int x;
-	char* kd;
-	char* home;
-	
-	/* pain. */
-
-	if (*key_dir == '~') {
-		home = getenv("HOME");
-		kd = malloc(strlen(home)+strlen(key_dir));
-		strcpy(kd, home);
-		strcat(kd, key_dir + 1);
-	} else {
-		kd = (char*)key_dir;
-	}
 
 	programs = malloc(program_count = 0);
 
 	/* master directory */
-	mdir = opendir(kd);
-	if (!mdir) {
+	dir = opendir(get_path());
+	if (!dir) {
 		fprintf(stderr, "could not open directory\n");
 		exit(1);
 	}
 
-	while (ment = readdir(mdir)) {
-		/* we are looking for sub-directories */
-		if (ment->d_type == DT_DIR && *ment->d_name != '.') {
-			cmd = malloc(strlen(program_detector) + strlen(ment->d_name));
-			sprintf(cmd, program_detector, ment->d_name);
-			pipe = popen(cmd, "r");
-			free(cmd);
-			fscanf(pipe, "%d", &x);
-			pclose(pipe);
-			if (x) {
+	while (ent = readdir(dir)) {
+		/* we are looking for non-hidden subdirectories */
+		if (ent->d_type == DT_DIR && *ent->d_name != '.') {
+			if (should_be_displayed(ent->d_name)) {
 				programs = realloc(programs, ++program_count * sizeof(SK_program));
-				programs[program_count-1] = (SK_program) {
-					.name = malloc(strlen(ment->d_name)+1),
-					/* malloc 0 just to make sure */
-					.categories = malloc(0),
-					.category_count = 0
-				};
-				strcpy(programs[program_count-1].name, ment->d_name);
-				pth = malloc(strlen(kd)+strlen(ment->d_name)+2);
-				strcpy(pth, kd);
-				strcat(pth, "/");
-				strcat(pth, ment->d_name);
-				dir = opendir(pth);
-				free(pth);
-				/* regular files */
-				while (ent = readdir(dir)) {
-					if (ent->d_type == DT_REG) {
-						programs[program_count-1].categories = realloc(programs[program_count-1].categories, ++programs[program_count-1].category_count*sizeof(SK_category));
-						programs[program_count-1].categories[programs[program_count-1].category_count-1] = (SK_category) {
-							.name = malloc(strlen(ent->d_name)+1),
-							/* malloc 0 just to make sure */
-							.keys = malloc(0),
-							.key_count = 0
-						};
-						strcpy(programs[program_count-1].categories[programs[program_count-1].category_count-1].name, ent->d_name);
-						pth = malloc(strlen(kd)+strlen(ment->d_name)+strlen(ent->d_name)+3);
-						strcpy(pth, kd);
-						strcat(pth, "/");
-						strcat(pth, ment->d_name);
-						strcat(pth, "/");
-						strcat(pth, ent->d_name);
-						file = fopen(pth, "r");
-						free(pth);
-						while (~getline(&line, &size, file)) {
-							programs[program_count-1].categories[programs[program_count-1].category_count-1].keys = realloc(programs[program_count-1].categories[programs[program_count-1].category_count-1].keys, ++programs[program_count-1].categories[programs[program_count-1].category_count-1].key_count*sizeof(SK_key));
-							k = &programs[program_count-1].categories[programs[program_count-1].category_count-1].keys[programs[program_count-1].categories[programs[program_count-1].category_count-1].key_count-1];
-							*k = (SK_key) {
-								/* malloc 0 just to make sure */
-								.mod = malloc(0),
-								.key = malloc(0),
-								.action = malloc(0)
-							};
-							i = 0;
-							for (j = 0; line[i] != ' ';i++,j++) {
-								k->mod = realloc(k->mod, j+2);
-								k->mod[j] = line[i];
-							}
-							k->mod[j] = 0;
-							while (line[i] == ' ') i++;
-							for (j = 0; line[i] != ' '; i++, j++) {
-								k->key = realloc(k->key, j+2);
-								k->key[j] = line[i];
-							}
-							k->key[j] = 0;
-							while (line[i] == ' ') i++;
-							for (j = 0; line[i] != '\n' && line[i]; i++, j++) {
-								k->action = realloc(k->action, j+2);
-								k->action[j] = line[i];
-							}
-							k->action[j] = 0;
-
-							free(line);
-							line = NULL;
-						}
-						fclose(file);
-					}
-				}
-				closedir(dir);
+				load_program(&programs[program_count-1], ent->d_name);
 			}
 		}
 	}
 
-	closedir(mdir);
+	closedir(dir);
 }
 
 void
@@ -222,11 +270,22 @@ size_window()
 
 	for (l = i = 0; i < program_count; i++) {
 		for (j = 0; j < programs[i].category_count; j++, l++) {
-			if (y + programs[i].categories[j].key_count * (key_font_extents.height + key_padding*2) + title_padding*2 + padding_below_title*2 + title_font_extents.height > height) {
+			if (y + title_padding*2 + padding_below_title + title_font_extents.height + border_padding > height) {
 				y = border_padding;
 				x = x + column_width + column_padding;
 			}
-			y += title_font_extents.height + title_padding * 2 + padding_below_title*2 + (key_font_extents.height + key_padding * 2) * programs[i].categories[j].key_count;
+			y += title_font_extents.height + title_padding * 2 + padding_below_title;
+			for (k = 0; k < programs[i].categories[j].key_count; k++) {
+				if (y + key_font_extents.height + key_padding*2 + border_padding > height) {
+					y = border_padding;
+					x = x + column_width + column_padding;
+				}
+				y += key_font_extents.height + key_padding*2;
+			}
+			if (y + padding_below_title > height) {
+				y = border_padding;
+				x = x + column_width + column_padding;
+			} else y += padding_below_title;
 			if (y > maxy) maxy = y;
 		}
 	}
@@ -263,7 +322,7 @@ redraw()
 
 	for (l = i = 0; i < program_count; i++) {
 		for (j = 0; j < programs[i].category_count; j++, l++) {
-			if (y + programs[i].categories[j].key_count * (key_font_extents.height + key_padding*2) + title_padding*2 + padding_below_title*2 + title_font_extents.height > height) {
+			if (y + title_padding*2 + padding_below_title + title_font_extents.height + border_padding > height) {
 				y = border_padding;
 				x = x + column_width + column_padding;
 			}
@@ -280,6 +339,10 @@ redraw()
 			y += title_font_extents.height + title_padding * 2 + padding_below_title;
 			cairo_set_font_size(cairo, font_size);
 			for (k = 0; k < programs[i].categories[j].key_count; k++) {
+				if (y + key_font_extents.height + key_padding*2 + border_padding > height) {
+					y = border_padding;
+					x = x + column_width + column_padding;
+				}
 				cairo_move_to(cairo, x + key_padding, y + key_padding + key_font_extents.ascent);
 				if (*programs[i].categories[j].keys[k].mod) {
 					cairo_set_source_rgb(cairo, dim_fg_color.r, dim_fg_color.g, dim_fg_color.b);
@@ -291,9 +354,12 @@ redraw()
 				cairo_text_extents(cairo, programs[i].categories[j].keys[k].action, &extents);
 				cairo_move_to(cairo, x + column_width - key_padding - extents.width, y + key_padding + key_font_extents.ascent);
 				cairo_show_text(cairo, programs[i].categories[j].keys[k].action);
-				y += key_font_extents.height + key_padding * 2;
+				y += key_font_extents.height + key_padding*2;
 			}
-			y += padding_below_title;
+			if (y + padding_below_title > height) {
+				y = border_padding;
+				x = x + column_width + column_padding;
+			} else y += padding_below_title;
 		}
 	}
 }

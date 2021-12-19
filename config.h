@@ -14,12 +14,12 @@ const static char color_dim_fg[] = "#929aaa"; /* modifiers     */
 
 const static unsigned int color_count = 6;
 const static char* title_colors[] = {
-	"#bf616a", /* red     */
-	"#a3be8c", /* green   */
-	"#ebcb8b", /* yellow  */
-	"#81a1c1", /* blue    */
-	"#b48ead", /* magenta */
-	"#88c0d0", /* cyan    */
+	"#bf616a",
+	"#d08770",
+	"#ebcb8b",
+	"#a3be8c",
+	"#5e81ac",
+	"#b48ead",
 };
 
 const static char font[]          = "Ubuntu";
