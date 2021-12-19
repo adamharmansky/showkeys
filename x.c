@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "config.h"
 #include "x.h"
 
@@ -8,9 +10,22 @@ cairo_surface_t* surface;
 cairo_t* cairo;
 unsigned int width = initial_width, height = initial_height;
 unsigned int winx = 0, winy = 0;
+XIC xic;
 
 void
 xinit() {
+/*
+ * ⠀⠀⠀⢀⡔⠋⢉⠩⡉⠛⠛⠛⠉⣉⣉⠒⠒⡦⣄
+ * ⠀⠀⢀⠎⠀⠀⠠⢃⣉⣀⡀⠂⠀⠀⠄⠀⠀⠀⠀⢱
+ * ⠀⡰⠟⣀⢀⣒⠐⠛⡛⠳⢭⠆⠀⠤⡶⠿⠛⠂⠀⢈⠳⡀
+ * ⢸⢈⢘⢠⡶⢬⣉⠉⠀⠀⡤⠄⠀⠀⠣⣄⠐⠚⣍⠁⢘⡇
+ * ⠈⢫⡊⠀⠹⡦⢼⣍⠓⢲⠥⢍⣁⣒⣊⣀⡬⢴⢿⠈⡜
+ * ⠀⠀⠹⡄⠀⠘⢾⡉⠙⡿⠶⢤⣷⣤⣧⣤⣷⣾⣿⠀⡇
+ * ⠀⠀⠀⠘⠦⡠⢀⠍⡒⠧⢄⣀⣁⣀⣏⣽⣹⠽⠊⠀⡇
+ * ⠀⠀⠀⠀⠀⠈⠑⠪⢔⡁⠦⠀⢀⡤⠤⠤⠄⠀⠠⠀⡇
+ * ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠑⠲⠤⠤⣀⣀⣀⣀⣀⠔⠁
+ */
+	XIM xim;
 	XColor border_color, bruh;
 	unsigned int i;
 	Atom stop_atom;
@@ -27,6 +42,10 @@ xinit() {
 	};
 
 	display = XOpenDisplay(NULL);
+	if (!display) {
+		fprintf(stderr, "Unable to open display\n");
+		exit(1);
+	}
 	screen = DefaultScreen(display);
 
 	if (info = XineramaQueryScreens(display, &n)) {
@@ -64,4 +83,11 @@ xinit() {
 
 	stop_atom = XInternAtom(display, "WM_DELETE_WINDOW", False);
 	XSetWMProtocols(display, window, &stop_atom, 1);
+
+	/* initialize input */
+	if ((xim = XOpenIM(display, NULL, NULL, NULL)) == NULL) {
+		fprintf(stderr, "Unable to open input method\n");
+		exit(1);
+	}
+	xic = XCreateIC(xim, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, XNClientWindow, window, XNFocusWindow, window, NULL);
 }

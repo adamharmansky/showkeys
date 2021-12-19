@@ -4,6 +4,10 @@ Keybind popup inspired by awesomewm
 
 ![](showkeys.gif)
 
+**NEW - SEARCH BAR**
+
+![](search.gif)
+
 ## Dependencies
 
  - Xlib

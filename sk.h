@@ -17,6 +17,9 @@ typedef struct sk_category {
 
 	SK_key* keys;
 	unsigned int key_count;
+
+	SK_key** matches;
+	unsigned int match_count;
 } SK_category;
 
 typedef struct sk_program {

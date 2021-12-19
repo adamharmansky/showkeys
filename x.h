@@ -15,6 +15,7 @@ extern cairo_surface_t* surface;
 extern cairo_t* cairo;
 extern unsigned int width, height;
 extern unsigned int winx, winy;
+extern XIC xic;
 
 void xinit();
 #endif

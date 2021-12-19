@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <ctype.h>
 
 #include "x.h"
 #include "config.h"
@@ -12,12 +13,19 @@ static SK_color* colors;
 static SK_color bg_color;
 static SK_color fg_color;
 static SK_color title_color;
+static SK_color search_bg_color;
 static SK_color dim_fg_color;
 
 static SK_program* programs;
 static unsigned int program_count = 0;
 
 static int column_width = 0;
+
+static struct {
+	char *text;
+	int head;
+	int size;
+} search;
 
 static SK_color
 parse_color(const char* color) {
@@ -33,6 +41,7 @@ init_colors() {
 	colors = malloc(color_count * sizeof(SK_color));
 
 	bg_color     = parse_color(color_bg);
+	search_bg_color = parse_color(color_search_bg);
 	fg_color     = parse_color(color_fg);
 	title_color  = parse_color(color_title);
 	dim_fg_color = parse_color(color_dim_fg);
@@ -106,6 +115,7 @@ load_key(SK_key* self, char* line) {
 
 static void
 load_category(SK_category* self, char* name, char* parent) {
+	unsigned int i;
 	FILE* file;
 	char* pth;
 	char* line = NULL;
@@ -137,6 +147,12 @@ load_category(SK_category* self, char* name, char* parent) {
 		/* set line to NULL so getline knows that it should malloc it again */
 		line = NULL;
 	}
+
+	self->matches = malloc(self->key_count * sizeof(SK_key*));
+	self->match_count = self->key_count;
+	for (i = 0; i < self->key_count; i++)
+		self->matches[i] = &self->keys[i];
+
 	fclose(file);
 }
 
@@ -247,12 +263,41 @@ calculate_column_width() {
 	}
 }
 
+int
+match_text(char* text) {
+	char* q;
+
+	char* orig = text;
+
+	for (q = search.text;*q;q++) {
+		while ((isupper(*text)?*text-'A'+'a':*text) != (isupper(*q)?*q-'A'+'a':*q) && *text) text++;
+		if (!*text) break;
+	}
+	return !*q;
+}
+
 void
-size_window()
-{
+match() {
+	unsigned int i, j, k;
+
+	for (i = 0; i < program_count; i++) {
+		for (j = 0; j < programs[i].category_count; j++) {
+			programs[i].categories[j].match_count = 0;
+			for (k = 0; k < programs[i].categories[j].key_count; k++) {
+				if (match_text(programs[i].categories[j].keys[k].action)) {
+					programs[i].categories[j].matches[programs[i].categories[j].match_count++] = &programs[i].categories[j].keys[k];
+				}
+			}
+		}
+	}
+}
+
+void
+size_window() {
 	unsigned int i, j, k, l;
 	cairo_font_extents_t title_font_extents;
 	cairo_font_extents_t key_font_extents;
+	cairo_font_extents_t search_font_extents;
 	int x = border_padding, y = border_padding;
 	int maxy = 0;
 	int w;
@@ -289,7 +334,9 @@ size_window()
 			if (y > maxy) maxy = y;
 		}
 	}
-	maxy += border_padding - padding_below_title;
+	cairo_set_font_size(cairo, search_font_size);
+	cairo_font_extents(cairo, &search_font_extents);
+	maxy += border_padding + search_padding*2 + search_font_extents.height;
 	XResizeWindow(display, window, x + column_width + border_padding, maxy);
 	XMoveWindow(display, window, winx + (width - (x + column_width + border_padding))/2, winy + (height - maxy)/2);
 	cairo_xlib_surface_set_size(surface, width, height);
@@ -305,9 +352,12 @@ redraw()
 	cairo_text_extents_t extents;
 	cairo_font_extents_t title_font_extents;
 	cairo_font_extents_t key_font_extents;
-	int x = border_padding, y = border_padding;
+	cairo_font_extents_t search_font_extents;
+	int x = border_padding, y;
 	char tmp[256];
 	int w;
+
+	cairo_push_group(cairo);
 
 	/* clear background */
 	cairo_set_source_rgb(cairo, bg_color.r, bg_color.g, bg_color.b);
@@ -320,53 +370,112 @@ redraw()
 	cairo_set_font_size(cairo, font_size);
 	cairo_font_extents(cairo, &key_font_extents);
 
+	cairo_set_font_size(cairo, search_font_size);
+	cairo_font_extents(cairo, &search_font_extents);
+
+	cairo_set_source_rgb(cairo, search_bg_color.r, search_bg_color.g, search_bg_color.b);
+	cairo_rectangle(cairo, border_padding, border_padding, width - border_padding*2, search_font_extents.height + search_padding*2);
+	cairo_fill(cairo);
+	cairo_set_source_rgb(cairo, fg_color.r, fg_color.g, fg_color.b);
+	cairo_move_to(cairo, border_padding + search_padding, border_padding + search_padding + search_font_extents.ascent);
+	cairo_show_text(cairo, search.text);
+	cairo_set_line_width(cairo, 2);
+	cairo_rel_line_to(cairo, 6, 0);
+	cairo_stroke(cairo);
+
+	y = border_padding + search_padding*2 + padding_below_title + search_font_extents.height;
+
 	for (l = i = 0; i < program_count; i++) {
 		for (j = 0; j < programs[i].category_count; j++, l++) {
-			if (y + title_padding*2 + padding_below_title + title_font_extents.height + border_padding > height) {
-				y = border_padding;
-				x = x + column_width + column_padding;
-			}
-			strcpy(tmp, programs[i].name);
-			strcat(tmp, ": ");
-			strcat(tmp, programs[i].categories[j].name);
-			cairo_set_font_size(cairo, title_font_size);
-			cairo_set_source_rgb(cairo, colors[l%color_count].r, colors[l%color_count].g, colors[l%color_count].b);
-			cairo_rectangle(cairo, x, y, column_width, title_font_extents.height + title_padding*2);
-			cairo_fill(cairo);
-			cairo_set_source_rgb(cairo, title_color.r, title_color.g, title_color.b);
-			cairo_move_to(cairo, x + title_padding, y + title_padding + title_font_extents.ascent);
-			cairo_show_text(cairo, tmp);
-			y += title_font_extents.height + title_padding * 2 + padding_below_title;
-			cairo_set_font_size(cairo, font_size);
-			for (k = 0; k < programs[i].categories[j].key_count; k++) {
-				if (y + key_font_extents.height + key_padding*2 + border_padding > height) {
-					y = border_padding;
+			if (programs[i].categories[j].match_count) {
+				if (y + title_padding*2 + padding_below_title + title_font_extents.height + border_padding > height) {
+					y = border_padding + search_padding*2 + padding_below_title + search_font_extents.height;
 					x = x + column_width + column_padding;
 				}
-				cairo_move_to(cairo, x + key_padding, y + key_padding + key_font_extents.ascent);
-				if (*programs[i].categories[j].keys[k].mod) {
-					cairo_set_source_rgb(cairo, dim_fg_color.r, dim_fg_color.g, dim_fg_color.b);
-					cairo_show_text(cairo, programs[i].categories[j].keys[k].mod);
-					cairo_show_text(cairo, "+");
+				strcpy(tmp, programs[i].name);
+				strcat(tmp, ": ");
+				strcat(tmp, programs[i].categories[j].name);
+				cairo_set_font_size(cairo, title_font_size);
+				cairo_set_source_rgb(cairo, colors[l%color_count].r, colors[l%color_count].g, colors[l%color_count].b);
+				cairo_rectangle(cairo, x, y, column_width, title_font_extents.height + title_padding*2);
+				cairo_fill(cairo);
+				cairo_set_source_rgb(cairo, title_color.r, title_color.g, title_color.b);
+				cairo_move_to(cairo, x + title_padding, y + title_padding + title_font_extents.ascent);
+				cairo_show_text(cairo, tmp);
+				y += title_font_extents.height + title_padding * 2 + padding_below_title;
+				cairo_set_font_size(cairo, font_size);
+				for (k = 0; k < programs[i].categories[j].match_count; k++) {
+					if (y + key_font_extents.height + key_padding*2 + border_padding > height) {
+						y = border_padding + search_padding*2 + padding_below_title + search_font_extents.height;
+						x = x + column_width + column_padding;
+					}
+					cairo_move_to(cairo, x + key_padding, y + key_padding + key_font_extents.ascent);
+					if (*programs[i].categories[j].matches[k]->mod) {
+						cairo_set_source_rgb(cairo, dim_fg_color.r, dim_fg_color.g, dim_fg_color.b);
+						cairo_show_text(cairo, programs[i].categories[j].matches[k]->mod);
+						cairo_show_text(cairo, "+");
+					}
+					cairo_set_source_rgb(cairo, fg_color.r, fg_color.g, fg_color.b);
+					cairo_show_text(cairo, programs[i].categories[j].matches[k]->key);
+					cairo_text_extents(cairo, programs[i].categories[j].matches[k]->action, &extents);
+					cairo_move_to(cairo, x + column_width - key_padding - extents.width, y + key_padding + key_font_extents.ascent);
+					cairo_show_text(cairo, programs[i].categories[j].matches[k]->action);
+					y += key_font_extents.height + key_padding*2;
 				}
-				cairo_set_source_rgb(cairo, fg_color.r, fg_color.g, fg_color.b);
-				cairo_show_text(cairo, programs[i].categories[j].keys[k].key);
-				cairo_text_extents(cairo, programs[i].categories[j].keys[k].action, &extents);
-				cairo_move_to(cairo, x + column_width - key_padding - extents.width, y + key_padding + key_font_extents.ascent);
-				cairo_show_text(cairo, programs[i].categories[j].keys[k].action);
-				y += key_font_extents.height + key_padding*2;
+				if (y + padding_below_title > height) {
+					y = border_padding + search_padding*2 + padding_below_title + search_font_extents.height;
+					x = x + column_width + column_padding;
+				} else y += padding_below_title;
 			}
-			if (y + padding_below_title > height) {
-				y = border_padding;
-				x = x + column_width + column_padding;
-			} else y += padding_below_title;
 		}
+	}
+
+	cairo_pop_group_to_source(cairo);
+	cairo_paint(cairo);
+	cairo_surface_flush(surface);
+}
+
+void
+keypress(XKeyEvent* ev) {
+	char buf[32];
+	KeySym ksym;
+	Status status;
+	int len;
+
+	len = XmbLookupString(xic, ev, buf, sizeof(buf), &ksym, &status);
+	switch (ksym) {
+		case XK_Escape:
+		case XK_Return:
+			exit(0);
+			break;
+		case XK_BackSpace:
+			if (search.head) {
+				search.text[--search.head] = 0;
+				match();
+				redraw();
+			}
+			break;
+		default:
+			if (!iscntrl(*buf)) {
+				if (search.head + strlen(buf) + 1 >= search.size) {
+					search.size <<= 1;
+					search.text = realloc(search.text, search.size);
+				}
+				search.text[search.head] = *buf;
+				search.text[++search.head] = 0;
+				match();
+				redraw();
+			}
+			break;
 	}
 }
 
 int
 main(int argc, char** argv) {
 	XEvent e;
+
+	/* :) */
+	*(search.text = malloc(search.size = 1)) = search.head = 0;
 
 	load_keys();
 	xinit();
@@ -388,7 +497,8 @@ main(int argc, char** argv) {
 				redraw();
 				break;
 			case KeyPress:
-				exit(0);
+				keypress(&e.xkey);
+				break;
 		}
 	}
 }
