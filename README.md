@@ -4,7 +4,7 @@ Keybind popup inspired by awesomewm
 
 ![](showkeys.gif)
 
-## Dependencies:
+## Dependencies
 
  - Xlib
  - Xinerama
