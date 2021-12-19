@@ -6,11 +6,12 @@ const static int initial_height = 800;
 
 const static char key_dir[]      = "/usr/share/showkeys"; /* directory containing the key defs (without trailing /) */
 
-const static char color_boder[]  = "#88c0d0"; /* window border */
-const static char color_bg[]     = "#3b4252"; /* background    */
-const static char color_fg[]     = "#eceff4"; /* foreground    */
-const static char color_title[]  = "#ffffff"; /* foreground    */
-const static char color_dim_fg[] = "#929aaa"; /* modifiers     */
+const static char color_boder[]     = "#88c0d0"; /* window border */
+const static char color_bg[]        = "#3b4252"; /* background    */
+const static char color_search_bg[] = "#4c566a"; /* background    */
+const static char color_fg[]        = "#eceff4"; /* foreground    */
+const static char color_title[]     = "#ffffff"; /* foreground    */
+const static char color_dim_fg[]    = "#929aaa"; /* modifiers     */
 
 const static unsigned int color_count = 6;
 const static char* title_colors[] = {
@@ -22,15 +23,17 @@ const static char* title_colors[] = {
 	"#b48ead",
 };
 
-const static char font[]          = "Ubuntu";
-const static int  font_size       = 12;
-const static int  title_font_size = 20;
+const static char font[]           = "Ubuntu";
+const static int  font_size        = 12;
+const static int  title_font_size  = 20;
+const static int  search_font_size = 16;
 
 const static int  border_padding   = 10;
 const static int  title_padding    = 3;
 const static int  padding_below_title = 5;
 const static int  key_padding      = 2;
 const static int  column_padding   = 5;
+const static int  search_padding   = 7;
 
 /* This is the script that checks whether to display the keys for a program.
  *  - one %s for program name 
