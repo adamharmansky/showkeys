@@ -38,4 +38,4 @@ const static int  search_padding   = 7;
 /* list of running programs */
 /* add echo-es at the start to make a program always visible in the list */
 
-const static char program_list[] = "echo dwm; pstree -T -p $(xdotool getactivewindow getwindowpid) | sed 's/[-+`|]\\+/\\n/g' | sed '/^\\s*$/d' | sed 's/([0-9]*)$//' | tr '[:upper:]' '[:lower:]' | sed 's/web content/firefox/g'";
+const static char program_list[] = "echo dwm; pstree -T -p $(xdotool getactivewindow getwindowpid) | sed 's/[-+`|]\\+/\\n/g' | sed '/^\\s*$/d' | sed 's/([0-9]*)$//' | tr '[:upper:]' '[:lower:]' | sed 's/web content/firefox/g' | sed 's/^tmux.*$/tmux\\n'$(tmux ls -F '#W #{window_activity}' | sort -k 2 | tail -n 1 | awk '{print $1}')'/'";
