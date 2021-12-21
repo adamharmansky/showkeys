@@ -35,9 +35,7 @@ const static int  key_padding      = 2;
 const static int  column_padding   = 5;
 const static int  search_padding   = 7;
 
-/* This is the script that checks whether to display the keys for a program.
- *  - one %s for program name 
- *  - the program needs to output a non-zero number on success and a zero on
- *    failure.
- *  - Add echo-es at start to always show keys for a program */
-const static char program_detector[]= "(echo dwm; pstree -T -p $(xdotool getactivewindow getwindowpid)) | sed 's/[-+`|]\\+/\\n/g' | sed '/^\\s*$/d' | tr '[:upper:]' '[:lower:]' | sed 's/web content/firefox/g' | grep $(echo '%s' | tr '[:upper:]' '[:lower:]') | wc";
+/* list of running programs */
+/* add echo-es at the start to make a program always visible in the list */
+
+const static char program_list[] = "echo dwm; pstree -T -p $(xdotool getactivewindow getwindowpid) | sed 's/[-+`|]\\+/\\n/g' | sed '/^\\s*$/d' | sed 's/([0-9]*)$//' | tr '[:upper:]' '[:lower:]' | sed 's/web content/firefox/g'";

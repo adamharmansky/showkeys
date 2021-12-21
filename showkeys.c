@@ -21,6 +21,8 @@ static unsigned int program_count = 0;
 
 static int column_width = 0;
 
+static char** running_programs;
+
 static struct {
 	char *text;
 	int head;
@@ -139,7 +141,7 @@ load_category(SK_category* self, char* name, char* parent) {
 
 	free(pth);
 
-	while (~getline(&line, &size, file)) {
+	while (getline(&line, &size, file) > 0) {
 		self->keys = realloc(self->keys, ++self->key_count*sizeof(SK_key));
 		load_key(&self->keys[self->key_count-1], line);
 
@@ -189,18 +191,17 @@ load_program(SK_program* self, char* name)
 
 static int
 should_be_displayed(char* name) {
-	char* cmd;
-	FILE* pipe;
-	int x;
+	unsigned int i, j;
 
-	cmd = malloc(strlen(program_detector) + strlen(name));
-	sprintf(cmd, program_detector, name);
-	pipe = popen(cmd, "r");
-	free(cmd);
-	fscanf(pipe, "%d", &x);
-	pclose(pipe);
-
-	return x;
+	for (i = 0; running_programs[i]; i++) {
+		for (j = 0; running_programs[i][j] && name[j]; j++) {
+			/* running_programs[i] is guaranteed to be lowercase */
+			if ((isupper(name[j]) ? name[j] + 'a' - 'A' : name[j]) != running_programs[i][j]) break;
+		}
+		/* one AND + one NOT instead of two NOTs and one OR 😎*/
+		if (!(running_programs[i][j] && name[j])) return 1;
+	}
+	return 0;
 }
 
 static void
@@ -470,13 +471,48 @@ keypress(XKeyEvent* ev) {
 	}
 }
 
+void
+get_running_programs() {
+	unsigned int i, j;
+	FILE* pipe;
+	char* line = 0;
+	size_t n;
+	unsigned int bufsize = 4;
+
+	running_programs = malloc(bufsize*sizeof(char*));
+	*running_programs = 0;
+
+	pipe = popen(program_list, "r");
+	
+	for (i = 0; getline(&line, &n, pipe) > 0; i++) {
+		running_programs[i] = malloc(n+1);
+		strcpy(running_programs[i], line);
+
+		/* convert to lowercase */
+		for (j = 0; running_programs[i][j]; j++)
+			if (isupper(running_programs[i][j]))
+				running_programs[i][j] += 'a' - 'A';
+
+		if (i + 2 >= bufsize)
+			running_programs = realloc(running_programs, (bufsize <<= 1)*sizeof(char*));
+
+		free(line);
+		line = NULL;
+	}
+	/* end it off with a NULL */
+	running_programs[i] = 0;
+
+	pclose(pipe);
+}
+
 int
 main(int argc, char** argv) {
 	XEvent e;
 
-	/* :) */
+	/* assigning 3 different variables in one line 😎 */
 	*(search.text = malloc(search.size = 1)) = search.head = 0;
 
+	get_running_programs();
 	load_keys();
 	xinit();
 	calculate_column_width();
