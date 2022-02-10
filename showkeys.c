@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <ctype.h>
+#include <locale.h>
 
 #include "x.h"
 #include "config.h"
@@ -74,7 +75,7 @@ get_path() {
 }
 
 static void
-load_key(SK_key* self, char* line) {
+load_key(SK_key* self, const char* line) {
 	unsigned int i, j;
 	int size;
 
@@ -180,7 +181,7 @@ load_program(SK_program* self, char* name)
 
 	free(pth);
 
-	while (ent = readdir(dir)) {
+	while ((ent = readdir(dir))) {
 		/* we are looking for regular files */
 		if (ent->d_type == DT_REG) {
 			self->categories = realloc(self->categories, ++self->category_count*sizeof(SK_category));
@@ -218,7 +219,7 @@ load_keys() {
 		exit(1);
 	}
 
-	while (ent = readdir(dir)) {
+	while ((ent = readdir(dir))) {
 		/* we are looking for non-hidden subdirectories */
 		if (ent->d_type == DT_DIR && *ent->d_name != '.') {
 			if (should_be_displayed(ent->d_name)) {
@@ -268,8 +269,6 @@ int
 match_text(char* text) {
 	char* q;
 
-	char* orig = text;
-
 	for (q = search.text;*q;q++) {
 		while ((isupper(*text)?*text-'A'+'a':*text) != (isupper(*q)?*q-'A'+'a':*q) && *text) text++;
 		if (!*text) break;
@@ -301,7 +300,6 @@ size_window() {
 	cairo_font_extents_t search_font_extents;
 	int x = border_padding, y = border_padding;
 	int maxy = 0;
-	int w;
 
 	/* clear background */
 	cairo_set_source_rgb(cairo, bg_color.r, bg_color.g, bg_color.b);
@@ -356,7 +354,6 @@ redraw()
 	cairo_font_extents_t search_font_extents;
 	int x = border_padding, y;
 	char tmp[256];
-	int w;
 
 	cairo_push_group(cairo);
 
@@ -450,11 +447,12 @@ keypress(XKeyEvent* ev) {
 			exit(0);
 			break;
 		case XK_BackSpace:
-			if (search.head) {
-				search.text[--search.head] = 0;
-				match();
-				redraw();
-			}
+			do {
+				search.head--;
+			} while ((search.text[search.head]&0xC0) == 0x80 && search.head);
+			search.text[search.head] = 0;
+			match();
+			redraw();
 			break;
 		default:
 			if (!iscntrl(*buf)) {
@@ -462,8 +460,10 @@ keypress(XKeyEvent* ev) {
 					search.size <<= 1;
 					search.text = realloc(search.text, search.size);
 				}
-				search.text[search.head] = *buf;
-				search.text[++search.head] = 0;
+				strcat(search.text, buf);
+				search.head += strlen(buf);
+				// search.text[search.head] = *buf;
+				// search.text[++search.head] = 0;
 				match();
 				redraw();
 			}
@@ -514,6 +514,7 @@ main(int argc, char** argv) {
 
 	get_running_programs();
 	load_keys();
+	setlocale(LC_ALL, "");
 	xinit();
 	calculate_column_width();
 	size_window();
@@ -523,6 +524,7 @@ main(int argc, char** argv) {
 
 	for (;;) {
 		XNextEvent(display, &e);
+		if (XFilterEvent(&e, window)) continue;
 		switch (e.type) {
 			case ConfigureNotify:
 				width = e.xconfigure.width;
@@ -538,3 +540,5 @@ main(int argc, char** argv) {
 		}
 	}
 }
+
+// vi: noet
